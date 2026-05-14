@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Codenames</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --red: #c0392b;
+    --red-light: #e8a09a;
+    --red-dark: #922b21;
+    --red-bg: #fadbd8;
+    --blue: #1a5276;
+    --blue-light: #7fb3d3;
+    --blue-dark: #154360;
+    --blue-bg: #d6eaf8;
+    --tan: #d4b896;
+    --tan-dark: #a0856a;
+    --tan-bg: #f5efe6;
+    --black: #1c1c1c;
+    --black-bg: #2c2c2c;
+    --unset: #e8e0d4;
+    --unset-border: #c4b89e;
+    --paper: #faf7f2;
+    --paper-dark: #f0e9de;
+    --ink: #2c2416;
+    --ink-muted: #6b5c48;
+    --shadow: rgba(0,0,0,0.18);
+  }
+
+  body {
+    font-family: 'Source Sans 3', sans-serif;
+    background: #1a150e;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  /* Header */
+  header {
+    width: 100%;
+    background: #0f0c08;
+    border-bottom: 2px solid #3a2e20;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Oswald', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: #c9a84c;
+    text-transform: uppercase;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .btn {
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    letter-spacing: 1.5px;
+    font-weight: 500;
+    text-transform: uppercase;
+    padding: 7px 16px;
+    border-radius: 3px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:active { transform: scale(0.97); }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid #4a3c28;
+    color: #c9a84c;
+  }
+  .btn-ghost:hover { background: #2a2015; border-color: #c9a84c; }
+
+  .btn-primary {
+    background: #c9a84c;
+    color: #0f0c08;
+  }
+  .btn-primary:hover { background: #d4b85a; }
+
+  .btn-danger {
+    background: transparent;
+    border: 1px solid #922b21;
+    color: #e8a09a;
+  }
+  .btn-danger:hover { background: #2a1210; }
+
+  /* Score bar */
+  .score-bar {
+    width: 100%;
+    max-width: 1100px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px 0;
+    gap: 12px;
+  }
+
+  .team-score {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Oswald', sans-serif;
+  }
+
+  .score-label {
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .score-count {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+    min-width: 32px;
+    text-align: center;
+  }
+
+  .score-pips {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    max-width: 160px;
+  }
+
+  .pip {
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .team-score.red .score-label { color: var(--red-light); }
+  .team-score.red .score-count { color: var(--red); }
+  .team-score.red .pip { background: var(--red); border-color: var(--red-dark); }
+  .team-score.red .pip.found { background: #4a1510; border-color: #6b2018; }
+
+  .team-score.blue .score-label { color: var(--blue-light); }
+  .team-score.blue .score-count { color: #5b9bd5; }
+  .team-score.blue .pip { background: #2980b9; border-color: var(--blue-dark); }
+  .team-score.blue .pip.found { background: #0e2d45; border-color: #1a4a6e; }
+
+  /* Timer */
+  .timer-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .timer-display {
+    font-family: 'Oswald', sans-serif;
+    font-size: 42px;
+    font-weight: 600;
+    color: #c9a84c;
+    letter-spacing: 2px;
+    line-height: 1;
+    min-width: 90px;
+    text-align: center;
+    transition: color 0.3s;
+  }
+  .timer-display.urgent { color: #e74c3c; animation: pulse 0.8s infinite; }
+
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+  .timer-controls {
+    display: flex;
+    gap: 6px;
+  }
+
+  .timer-btn {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 4px 10px;
+    border-radius: 2px;
+    border: 1px solid #3a2e20;
+    background: transparent;
+    color: #8a7458;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+  .timer-btn:hover { border-color: #c9a84c; color: #c9a84c; }
+  .timer-btn.active { background: #2a2015; border-color: #c9a84c; color: #c9a84c; }
+
+  /* Turn indicator */
+  .turn-indicator {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 2px;
+    border: 1px solid;
+  }
+  .turn-indicator.red { color: var(--red-light); border-color: var(--red-dark); background: rgba(192,57,43,0.1); }
+  .turn-indicator.blue { color: var(--blue-light); border-color: var(--blue-dark); background: rgba(26,82,118,0.1); }
+
+  /* Grid */
+  .grid-wrap {
+    width: 100%;
+    max-width: 1100px;
+    padding: 12px 16px 24px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+  }
+
+  /* Word Card */
+  .card {
+    position: relative;
+    aspect-ratio: 1.75 / 1;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.12s, box-shadow 0.12s;
+    overflow: visible;
+  }
+  .card:hover { transform: translateY(-2px); }
+  .card:active { transform: scale(0.97); }
+
+  .card-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    position: relative;
+    overflow: hidden;
+    border: 2px solid transparent;
+    box-shadow: 0 2px 8px var(--shadow), inset 0 1px 0 rgba(255,255,255,0.12);
+    transition: all 0.2s;
+  }
+
+  /* Card states */
+  .card[data-state="unset"] .card-inner {
+    background: var(--unset);
+    border-color: var(--unset-border);
+  }
+
+  .card[data-state="red"] .card-inner {
+    background: var(--red);
+    border-color: var(--red-dark);
+    box-shadow: 0 2px 12px rgba(192,57,43,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+  }
+
+  .card[data-state="blue"] .card-inner {
+    background: var(--blue);
+    border-color: var(--blue-dark);
+    box-shadow: 0 2px 12px rgba(26,82,118,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+  }
+
+  .card[data-state="civilian"] .card-inner {
+    background: var(--tan);
+    border-color: var(--tan-dark);
+  }
+
+  .card[data-state="assassin"] .card-inner {
+    background: var(--black);
+    border-color: #444;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+
+  /* Revealed overlay */
+  .card.revealed .card-inner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.38);
+    border-radius: 3px;
+  }
+  .card.revealed { opacity: 0.65; }
+  .card.revealed:hover { transform: none; }
+
+  /* Card texture lines (Codenames aesthetic) */
+  .card-inner::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 28%;
+    background: rgba(255,255,255,0.06);
+    border-radius: 3px 3px 0 0;
+  }
+
+  .card[data-state="unset"] .card-inner::before { background: rgba(255,255,255,0.3); }
+  .card[data-state="civilian"] .card-inner::before { background: rgba(255,255,255,0.2); }
+
+  /* Agent count bar at top */
+  .card-top-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 6px;
+    border-radius: 3px 3px 0 0;
+  }
+  .card[data-state="red"] .card-top-bar { background: rgba(255,255,255,0.2); }
+  .card[data-state="blue"] .card-top-bar { background: rgba(255,255,255,0.2); }
+  .card[data-state="unset"] .card-top-bar { background: rgba(0,0,0,0.1); }
+  .card[data-state="civilian"] .card-top-bar { background: rgba(0,0,0,0.15); }
+  .card[data-state="assassin"] .card-top-bar { background: rgba(255,255,255,0.06); }
+
+  /* Word text */
+  .card-word {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    font-size: clamp(11px, 1.5vw, 17px);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 0 8px;
+    line-height: 1.1;
+    position: relative;
+    z-index: 1;
+  }
+
+  .card[data-state="unset"] .card-word { color: var(--ink); }
+  .card[data-state="red"] .card-word { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+  .card[data-state="blue"] .card-word { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+  .card[data-state="civilian"] .card-word { color: #4a3520; }
+  .card[data-state="assassin"] .card-word { color: #ccc; letter-spacing: 2px; }
+
+  /* State icon */
+  .card-icon {
+    font-size: 10px;
+    position: relative;
+    z-index: 1;
+    opacity: 0.7;
+  }
+  .card[data-state="unset"] .card-icon { color: var(--ink-muted); }
+  .card[data-state="red"] .card-icon { color: rgba(255,255,255,0.6); }
+  .card[data-state="blue"] .card-icon { color: rgba(255,255,255,0.6); }
+  .card[data-state="civilian"] .card-icon { color: var(--tan-dark); }
+  .card[data-state="assassin"] .card-icon { color: #666; }
+  .card[data-state="unset"] .card-icon { display: none; }
+
+  /* Picker popup */
+  .picker {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1c1710;
+    border: 1px solid #3a2e20;
+    border-radius: 6px;
+    padding: 8px;
+    display: none;
+    gap: 6px;
+    z-index: 200;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    white-space: nowrap;
+  }
+  .picker.open {
+    display: flex;
+    animation: fadeIn 0.1s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateX(-50%) translateY(4px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+  .pick-btn {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 6px 10px;
+    border-radius: 3px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.12s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+  .pick-btn:active { transform: scale(0.95); }
+
+  .pick-btn.red { background: var(--red); color: #fff; border-color: var(--red-dark); }
+  .pick-btn.red:hover { background: var(--red-dark); }
+  .pick-btn.blue { background: var(--blue); color: #fff; border-color: var(--blue-dark); }
+  .pick-btn.blue:hover { background: var(--blue-dark); }
+  .pick-btn.civilian { background: var(--tan); color: #4a3520; border-color: var(--tan-dark); }
+  .pick-btn.civilian:hover { background: #c4a882; }
+  .pick-btn.assassin { background: #2c2c2c; color: #ccc; border-color: #555; }
+  .pick-btn.assassin:hover { background: #1c1c1c; }
+  .pick-btn.unset { background: transparent; color: #8a7458; border-color: #3a2e20; }
+  .pick-btn.unset:hover { border-color: #8a7458; color: #c9a84c; }
+  .pick-btn.replace { background: transparent; color: #6a8a5a; border-color: #2a3a20; }
+  .pick-btn.replace:hover { border-color: #6a8a5a; color: #8ab870; }
+
+  .pick-btn .pick-icon { font-size: 16px; }
+
+  /* Starting team modal */
+  .start-modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 350;
+    align-items: center;
+    justify-content: center;
+  }
+  .start-modal-backdrop.open { display: flex; }
+
+  .start-modal {
+    background: #1c1710;
+    border: 1px solid #3a2e20;
+    border-radius: 8px;
+    padding: 32px 40px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.7);
+    min-width: 320px;
+  }
+
+  .start-modal-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #8a7458;
+  }
+
+  .start-modal-sub {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    color: #4a3c28;
+    text-transform: uppercase;
+    margin-top: -12px;
+  }
+
+  .team-pick-btns {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  .team-pick-btn {
+    font-family: 'Oswald', sans-serif;
+    font-size: 16px;
+    letter-spacing: 2px;
+    font-weight: 600;
+    text-transform: uppercase;
+    padding: 14px 32px;
+    border-radius: 4px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .team-pick-btn:active { transform: scale(0.96); }
+  .team-pick-btn.red { background: var(--red); color: #fff; border-color: var(--red-dark); }
+  .team-pick-btn.red:hover { background: var(--red-dark); }
+  .team-pick-btn.blue { background: var(--blue); color: #fff; border-color: var(--blue-dark); }
+  .team-pick-btn.blue:hover { background: var(--blue-dark); }
+
+  /* Spymaster toggle */
+  .spy-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #8a7458;
+    cursor: pointer;
+    padding: 6px 12px;
+    border: 1px solid #2a2015;
+    border-radius: 3px;
+    background: transparent;
+    transition: all 0.15s;
+  }
+  .spy-toggle:hover { border-color: #4a3c28; color: #c9a84c; }
+  .spy-toggle.active { background: #1a1508; border-color: #c9a84c; color: #c9a84c; }
+
+  .spy-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #3a2e20;
+    transition: background 0.15s;
+  }
+  .spy-toggle.active .spy-dot { background: #c9a84c; }
+
+  /* Spymaster overlay — show all colors */
+  body.spymaster .card[data-state="unset"] .card-inner {
+    border: 2px dashed #555;
+    background: #2c2c2c;
+  }
+  body.spymaster .card[data-state="unset"] .card-word { color: #888; }
+
+  /* Settings modal */
+  .modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 300;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+
+  .modal {
+    background: #1c1710;
+    border: 1px solid #3a2e20;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 680px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.7);
+  }
+
+  .modal-header {
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid #2a2015;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .modal-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 16px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #c9a84c;
+  }
+
+  .modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .setting-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .setting-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #8a7458;
+  }
+
+  .setting-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .setting-input {
+    background: #0f0c08;
+    border: 1px solid #3a2e20;
+    border-radius: 3px;
+    color: #e8dcc8;
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 14px;
+    padding: 7px 10px;
+    flex: 1;
+    outline: none;
+  }
+  .setting-input:focus { border-color: #c9a84c; }
+
+  .word-count-info {
+    font-size: 12px;
+    color: #5a4c38;
+  }
+
+  textarea.setting-input {
+    height: 200px;
+    resize: vertical;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .card-counts {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .count-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .count-label {
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .count-label.red { color: var(--red-light); }
+  .count-label.blue { color: var(--blue-light); }
+  .count-label.tan { color: var(--tan); }
+  .count-label.black { color: #888; }
+
+  .count-input {
+    background: #0f0c08;
+    border: 1px solid #3a2e20;
+    border-radius: 3px;
+    color: #e8dcc8;
+    font-family: 'Oswald', sans-serif;
+    font-size: 18px;
+    padding: 6px 10px;
+    text-align: center;
+    outline: none;
+    width: 100%;
+  }
+  .count-input:focus { border-color: #c9a84c; }
+
+  .modal-footer {
+    padding: 12px 20px;
+    border-top: 1px solid #2a2015;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  /* Win overlay */
+  .win-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 400;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.85);
+  }
+  .win-overlay.show { display: flex; }
+
+  .win-card {
+    background: #1c1710;
+    border: 2px solid #c9a84c;
+    border-radius: 8px;
+    padding: 40px 60px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .win-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+  }
+  .win-title.red { color: var(--red); }
+  .win-title.blue { color: #5b9bd5; }
+
+  .win-subtitle {
+    font-family: 'Oswald', sans-serif;
+    font-size: 14px;
+    letter-spacing: 3px;
+    color: #8a7458;
+    text-transform: uppercase;
+  }
+
+  /* Responsive */
+  @media (max-width: 700px) {
+    .grid { grid-template-columns: repeat(5, 1fr); gap: 5px; }
+    .score-count { font-size: 24px; }
+    .timer-display { font-size: 32px; }
+    .score-pips { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Codenames</div>
+  <div class="header-actions">
+    <button class="spy-toggle" id="spyToggle" onclick="toggleSpymaster()">
+      <span class="spy-dot"></span>
+      Spymaster
+    </button>
+    <button class="btn btn-ghost" onclick="openSettings()">Settings</button>
+    <button class="btn btn-primary" onclick="newGame()">New Game</button>
+  </div>
+</header>
+
+<div class="score-bar">
+  <div class="team-score red">
+    <div>
+      <div class="score-label">Red</div>
+      <div class="score-count" id="redCount">9</div>
+    </div>
+    <div class="score-pips" id="redPips"></div>
+  </div>
+
+  <div class="timer-area">
+    <div class="timer-display" id="timerDisplay">2:00</div>
+    <div class="timer-controls">
+      <button class="timer-btn" id="timerStartBtn" onclick="toggleTimer()">Start</button>
+      <button class="timer-btn" onclick="resetTimer()">Reset</button>
+      <select id="timerPreset" class="timer-btn" onchange="setTimerPreset(this.value)" style="padding:4px 6px;">
+        <option value="60">1 min</option>
+        <option value="120" selected>2 min</option>
+        <option value="180">3 min</option>
+        <option value="300">5 min</option>
+      </select>
+    </div>
+    <div class="turn-indicator red" id="turnIndicator">Red's Turn</div>
+  </div>
+
+  <div class="team-score blue" style="flex-direction: row-reverse; text-align: right;">
+    <div>
+      <div class="score-label">Blue</div>
+      <div class="score-count" id="blueCount">8</div>
+    </div>
+    <div class="score-pips" id="bluePips" style="justify-content: flex-end;"></div>
+  </div>
+</div>
+
+<div class="grid-wrap">
+  <div class="grid" id="grid"></div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-backdrop" id="settingsModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Settings</div>
+      <button class="btn btn-ghost" onclick="closeSettings()" style="padding:4px 12px;">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="setting-group">
+        <div class="setting-label">Card Counts</div>
+        <div class="card-counts">
+          <div class="count-field">
+            <div class="count-label red">Red</div>
+            <input type="number" class="count-input" id="setRed" value="9" min="1" max="15">
+          </div>
+          <div class="count-field">
+            <div class="count-label blue">Blue</div>
+            <input type="number" class="count-input" id="setBlue" value="8" min="1" max="15">
+          </div>
+          <div class="count-field">
+            <div class="count-label tan">Civilian</div>
+            <input type="number" class="count-input" id="setCivilian" value="7" min="0" max="15">
+          </div>
+          <div class="count-field">
+            <div class="count-label black">Assassin</div>
+            <input type="number" class="count-input" id="setAssassin" value="1" min="1" max="3">
+          </div>
+        </div>
+        <div class="word-count-info" id="countInfo">Total: 25 cards (must equal 25)</div>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">Word Dictionary <span style="font-size:11px;color:#4a3c28;" id="dictCount"></span></div>
+        <textarea class="setting-input" id="dictInput" placeholder="Enter words separated by commas or newlines..."></textarea>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-ghost" onclick="resetDict()" style="font-size:11px;padding:5px 12px;">Reset to Default</button>
+          <span class="word-count-info" id="dictInfo" style="align-self:center;"></span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeSettings()">Cancel</button>
+      <button class="btn btn-primary" onclick="applySettings()">Apply & New Game</button>
+    </div>
+  </div>
+</div>
+
+<!-- Starting Team Modal -->
+<div class="start-modal-backdrop" id="startModal">
+  <div class="start-modal">
+    <div class="start-modal-title">Who goes first?</div>
+    <div class="start-modal-sub" id="startModalSub">Starting team gets 9 cards</div>
+    <div class="team-pick-btns">
+      <button class="team-pick-btn red" onclick="startGame('red')">Red</button>
+      <button class="team-pick-btn blue" onclick="startGame('blue')">Blue</button>
+    </div>
+  </div>
+</div>
+
+<!-- Win Overlay -->
+<div class="win-overlay" id="winOverlay">
+  <div class="win-card">
+    <div class="win-title" id="winTitle">Red Wins!</div>
+    <div class="win-subtitle" id="winSubtitle">All agents found</div>
+    <button class="btn btn-primary" onclick="newGame()" style="margin-top:8px;">Play Again</button>
+  </div>
+</div>
+
+<script>
+const DEFAULT_WORDS = [
+  "africa","agent","air","alien","alps","amazon","angel","antarctica","apple","arm",
+  "back","ball","band","bank","bark","bat","berlin","board","bolt","bomb",
+  "bond","book","boom","bow","brush","buck","bug","bugle","button","camp",
+  "canada","capital","car","cast","cat","cell","check","chest","china","chocolate",
+  "church","circle","cliff","club","code","cold","comic","compound","contract","cook",
+  "copper","court","cover","crash","cross","crown","cycle","czech","dance","date",
+  "day","death","deck","degrees","diamond","dice","dinosaur","disease","doctor","dog",
+  "draft","dragon","dress","drill","drop","duck","dwarf","eagle","egypt","embassy",
+  "engine","europe","eye","face","fair","fall","fan","fence","field","fighter",
+  "figure","file","film","fire","fish","flag","flight","floor","fly","foot",
+  "force","fork","france","game","gas","genius","germany","ghost","giant","glass",
+  "glove","gold","grace","green","ground","ham","hand","head","heart","helicopter",
+  "himalaya","hole","hollywood","honey","hood","horn","horse","hospital","hotel","ice",
+  "india","iron","ivory","jack","jam","japan","jet","joke","jupiter","ketchup",
+  "key","kid","king","knife","knight","lab","lap","laser","lead","lemon",
+  "leprechaun","light","limousine","line","link","lion","loch","ness","log","london",
+  "luck","mail","mammoth","marble","march","mass","match","mercury","mine","mint",
+  "missile","model","mole","moon","moscow","mount","mouse","mouth","mug","nail",
+  "needle","net","new york","night","ninja","note","novel","nurse","nut","object",
+  "oil","olive","olympus","opera","orange","organ","palm","pan","paper","park",
+  "part","pass","paste","penguin","phoenix","piano","pie","pilot","pin","pipe",
+  "pit","pitch","plane","plastic","plate","play","plot","point","poison","pole",
+  "police","pool","port","post","pound","press","pumpkin","pyramid","queen","rabbit",
+  "racket","ray","revolution","ring","robin","robot","rock","rome","root","rose",
+  "round","row","ruler","russia","satellite","scale","school","scientist","screen","scuba",
+  "seal","server","shadow","shakespeare","shark","ship","shoe","shop","shot","sink",
+  "skyscraper","slip","slug","smuggler","snow","soldier","soul","sound","space","spell",
+  "spider","spike","spine","spot","spring","spy","square","stadium","staff","star",
+  "state","stick","stock","storm","strike","sub","suit","superhero","swing","table",
+  "tablet","tank","tap","teacher","telescope","terminal","thief","tick","time","tokyo",
+  "tooth","torch","tower","track","train","triangle","trip","trunk","tube","turkey",
+  "undertaker","vacuum","van","vet","wake","wall","watch","water","wave","web",
+  "well","whip","white","wind","witch","worm","yard"
+];
+
+let gameConfig = {
+  redCount: 9,
+  blueCount: 8,
+  civilianCount: 7,
+  assassinCount: 1,
+  dictionary: [...DEFAULT_WORDS]
+};
+
+let cards = [];
+let spymaster = false;
+let openPicker = null;
+let timerInterval = null;
+let timerSeconds = 120;
+let timerRunning = false;
+let currentTurn = 'red';
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+let usedWords = new Set();
+
+function newGame() {
+  document.getElementById('winOverlay').classList.remove('show');
+  closeSettings();
+  // Show starting team picker
+  const sub = document.getElementById('startModalSub');
+  const higher = Math.max(gameConfig.redCount, gameConfig.blueCount);
+  sub.textContent = `Starting team gets ${higher} cards`;
+  document.getElementById('startModal').classList.add('open');
+}
+
+function startGame(startingTeam) {
+  document.getElementById('startModal').classList.remove('open');
+
+  // Starting team gets the higher count
+  let redCount = gameConfig.redCount;
+  let blueCount = gameConfig.blueCount;
+  // Ensure starting team has the larger count; swap if needed
+  const baseHigh = Math.max(gameConfig.redCount, gameConfig.blueCount);
+  const baseLow = Math.min(gameConfig.redCount, gameConfig.blueCount);
+  if (startingTeam === 'red') { redCount = baseHigh; blueCount = baseLow; }
+  else { blueCount = baseHigh; redCount = baseLow; }
+
+  const total = redCount + blueCount + gameConfig.civilianCount + gameConfig.assassinCount;
+  usedWords = new Set();
+  const words = shuffle(gameConfig.dictionary).slice(0, total);
+  words.forEach(w => usedWords.add(w));
+
+  const assignments = shuffle([
+    ...Array(redCount).fill('red'),
+    ...Array(blueCount).fill('blue'),
+    ...Array(gameConfig.civilianCount).fill('civilian'),
+    ...Array(gameConfig.assassinCount).fill('assassin'),
+  ]);
+  cards = words.map((word, i) => ({
+    word,
+    trueState: assignments[i],
+    displayState: 'unset',
+    revealed: false
+  }));
+
+  // Store actual counts for this game
+  gameConfig._redCount = redCount;
+  gameConfig._blueCount = blueCount;
+
+  currentTurn = startingTeam;
+  renderGrid();
+  updateScores();
+  resetTimer();
+  document.getElementById('turnIndicator').textContent = (startingTeam === 'red' ? "Red" : "Blue") + "'s Turn";
+  document.getElementById('turnIndicator').className = 'turn-indicator ' + startingTeam;
+}
+
+function replaceWord(index, e) {
+  e.stopPropagation();
+  closeAllPickers();
+  const card = cards[index];
+  if (card.revealed) return;
+  const available = gameConfig.dictionary.filter(w => !usedWords.has(w));
+  if (available.length === 0) return;
+  const newWord = available[Math.floor(Math.random() * available.length)];
+  usedWords.delete(card.word);
+  usedWords.add(newWord);
+  card.word = newWord;
+  renderGrid();
+}
+
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  cards.forEach((card, i) => {
+    const el = document.createElement('div');
+    el.className = 'card' + (card.revealed ? ' revealed' : '');
+    el.dataset.state = card.revealed ? card.trueState : 'unset';
+    el.dataset.index = i;
+
+    const stateIcons = { red: '▲', blue: '▼', civilian: '●', assassin: '✕', unset: '' };
+
+    el.innerHTML = `
+      <div class="card-inner">
+        <div class="card-top-bar"></div>
+        <div class="card-word">${card.word.toUpperCase()}</div>
+        ${card.revealed ? `<div class="card-icon">${stateIcons[card.trueState]}</div>` : ''}
+      </div>
+      <div class="picker" id="picker-${i}">
+        <button class="pick-btn red" onclick="setCard(${i},'red',event)"><span class="pick-icon">▲</span>Red</button>
+        <button class="pick-btn blue" onclick="setCard(${i},'blue',event)"><span class="pick-icon">▼</span>Blue</button>
+        <button class="pick-btn civilian" onclick="setCard(${i},'civilian',event)"><span class="pick-icon">●</span>Civilian</button>
+        <button class="pick-btn assassin" onclick="setCard(${i},'assassin',event)"><span class="pick-icon">✕</span>Assassin</button>
+        <button class="pick-btn unset" onclick="setCard(${i},'unset',event)"><span class="pick-icon">↺</span>Unset</button>
+        ${!card.revealed ? `<button class="pick-btn replace" onclick="replaceWord(${i},event)"><span class="pick-icon">⟳</span>Replace</button>` : ''}
+      </div>
+    `;
+
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('.pick-btn')) return;
+      togglePicker(i, e);
+    });
+
+    grid.appendChild(el);
+  });
+}
+
+function togglePicker(index, e) {
+  e.stopPropagation();
+  const picker = document.getElementById('picker-' + index);
+  const isOpen = picker.classList.contains('open');
+  closeAllPickers();
+  if (!isOpen) {
+    picker.classList.add('open');
+    openPicker = index;
+  }
+}
+
+function closeAllPickers() {
+  document.querySelectorAll('.picker.open').forEach(p => p.classList.remove('open'));
+  openPicker = null;
+}
+
+function setCard(index, state, e) {
+  e.stopPropagation();
+  const card = cards[index];
+  if (state === 'unset') {
+    card.revealed = false;
+    card.trueState = null;
+  } else {
+    card.trueState = state;
+    card.revealed = true;
+  }
+  closeAllPickers();
+  renderGrid();
+  updateScores();
+  checkWin();
+}
+
+function updateScores() {
+  const redCount = gameConfig._redCount || gameConfig.redCount;
+  const blueCount = gameConfig._blueCount || gameConfig.blueCount;
+  const foundRed = cards.filter(c => c.revealed && c.trueState === 'red').length;
+  const foundBlue = cards.filter(c => c.revealed && c.trueState === 'blue').length;
+  const remRed = Math.max(0, redCount - foundRed);
+  const remBlue = Math.max(0, blueCount - foundBlue);
+
+  document.getElementById('redCount').textContent = remRed;
+  document.getElementById('blueCount').textContent = remBlue;
+
+  // Pips
+  const redPips = document.getElementById('redPips');
+  redPips.innerHTML = '';
+  for (let i = 0; i < redCount; i++) {
+    const pip = document.createElement('div');
+    pip.className = 'pip' + (i < foundRed ? ' found' : '');
+    redPips.appendChild(pip);
+  }
+
+  const bluePips = document.getElementById('bluePips');
+  bluePips.innerHTML = '';
+  for (let i = 0; i < blueCount; i++) {
+    const pip = document.createElement('div');
+    pip.className = 'pip' + (i < foundBlue ? ' found' : '');
+    bluePips.appendChild(pip);
+  }
+}
+
+function checkWin() {
+  const redCount = gameConfig._redCount || gameConfig.redCount;
+  const blueCount = gameConfig._blueCount || gameConfig.blueCount;
+  const foundRed = cards.filter(c => c.revealed && c.trueState === 'red').length;
+  const foundBlue = cards.filter(c => c.revealed && c.trueState === 'blue').length;
+  const assassinFound = cards.find(c => c.revealed && c.trueState === 'assassin');
+
+  if (assassinFound) {
+    const loser = currentTurn;
+    const winner = loser === 'red' ? 'blue' : 'red';
+    showWin(winner, 'Assassin revealed!');
+    return;
+  }
+  if (foundRed >= gameConfig.redCount) {
+    showWin('red', 'All red agents found');
+    return;
+  }
+  if (foundBlue >= gameConfig.blueCount) {
+    showWin('blue', 'All blue agents found');
+    return;
+  }
+}
+
+function showWin(team, reason) {
+  const overlay = document.getElementById('winOverlay');
+  document.getElementById('winTitle').textContent = team === 'red' ? 'Red Wins!' : 'Blue Wins!';
+  document.getElementById('winTitle').className = 'win-title ' + team;
+  document.getElementById('winSubtitle').textContent = reason;
+  overlay.classList.add('show');
+  stopTimer();
+}
+
+function toggleSpymaster() {
+  spymaster = !spymaster;
+  const btn = document.getElementById('spyToggle');
+  btn.classList.toggle('active', spymaster);
+  if (spymaster) {
+    document.body.classList.add('spymaster');
+    // Show true state on all cards
+    document.querySelectorAll('.card').forEach((el, i) => {
+      if (!cards[i].revealed) {
+        el.dataset.state = cards[i].trueState || 'unset';
+      }
+    });
+  } else {
+    document.body.classList.remove('spymaster');
+    document.querySelectorAll('.card').forEach((el, i) => {
+      if (!cards[i].revealed) {
+        el.dataset.state = 'unset';
+      }
+    });
+  }
+}
+
+// Timer
+function toggleTimer() {
+  if (timerRunning) {
+    stopTimer();
+  } else {
+    startTimer();
+  }
+}
+
+function startTimer() {
+  timerRunning = true;
+  document.getElementById('timerStartBtn').textContent = 'Pause';
+  document.getElementById('timerStartBtn').classList.add('active');
+  timerInterval = setInterval(() => {
+    timerSeconds--;
+    updateTimerDisplay();
+    if (timerSeconds <= 0) {
+      stopTimer();
+      switchTurn();
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  timerRunning = false;
+  clearInterval(timerInterval);
+  document.getElementById('timerStartBtn').textContent = 'Start';
+  document.getElementById('timerStartBtn').classList.remove('active');
+}
+
+function resetTimer() {
+  stopTimer();
+  const preset = parseInt(document.getElementById('timerPreset').value);
+  timerSeconds = preset;
+  updateTimerDisplay();
+}
+
+function setTimerPreset(val) {
+  stopTimer();
+  timerSeconds = parseInt(val);
+  updateTimerDisplay();
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(timerSeconds / 60);
+  const s = timerSeconds % 60;
+  const disp = document.getElementById('timerDisplay');
+  disp.textContent = m + ':' + String(s).padStart(2, '0');
+  disp.classList.toggle('urgent', timerSeconds <= 15 && timerSeconds > 0);
+}
+
+function switchTurn() {
+  currentTurn = currentTurn === 'red' ? 'blue' : 'red';
+  const ind = document.getElementById('turnIndicator');
+  ind.textContent = (currentTurn === 'red' ? "Red" : "Blue") + "'s Turn";
+  ind.className = 'turn-indicator ' + currentTurn;
+  resetTimer();
+}
+
+// Settings
+function openSettings() {
+  updateDictInfo();
+  document.getElementById('setRed').value = gameConfig.redCount;
+  document.getElementById('setBlue').value = gameConfig.blueCount;
+  document.getElementById('setCivilian').value = gameConfig.civilianCount;
+  document.getElementById('setAssassin').value = gameConfig.assassinCount;
+  document.getElementById('dictInput').value = gameConfig.dictionary.join(', ');
+  document.getElementById('settingsModal').classList.add('open');
+
+  ['setRed','setBlue','setCivilian','setAssassin'].forEach(id => {
+    document.getElementById(id).oninput = updateCountInfo;
+  });
+  document.getElementById('dictInput').oninput = updateDictInfo;
+  updateCountInfo();
+  updateDictInfo();
+}
+
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('open');
+}
+
+function updateCountInfo() {
+  const r = parseInt(document.getElementById('setRed').value)||0;
+  const b = parseInt(document.getElementById('setBlue').value)||0;
+  const c = parseInt(document.getElementById('setCivilian').value)||0;
+  const a = parseInt(document.getElementById('setAssassin').value)||0;
+  const total = r+b+c+a;
+  const info = document.getElementById('countInfo');
+  info.textContent = `Total: ${total} cards (must equal 25)`;
+  info.style.color = total === 25 ? '#5a8a4a' : '#c0392b';
+}
+
+function updateDictInfo() {
+  const words = parseDictInput();
+  document.getElementById('dictInfo').textContent = words.length + ' words';
+}
+
+function parseDictInput() {
+  return document.getElementById('dictInput').value
+    .split(/[,\n]+/)
+    .map(w => w.trim().toLowerCase())
+    .filter(w => w.length > 0);
+}
+
+function resetDict() {
+  document.getElementById('dictInput').value = DEFAULT_WORDS.join(', ');
+  updateDictInfo();
+}
+
+function applySettings() {
+  const r = parseInt(document.getElementById('setRed').value)||0;
+  const b = parseInt(document.getElementById('setBlue').value)||0;
+  const c = parseInt(document.getElementById('setCivilian').value)||0;
+  const a = parseInt(document.getElementById('setAssassin').value)||0;
+  if (r+b+c+a !== 25) {
+    document.getElementById('countInfo').style.color = '#c0392b';
+    document.getElementById('countInfo').textContent = `Total must equal 25 (currently ${r+b+c+a})`;
+    return;
+  }
+  const words = parseDictInput();
+  if (words.length < 25) {
+    alert('Dictionary needs at least 25 words.');
+    return;
+  }
+  gameConfig.redCount = r;
+  gameConfig.blueCount = b;
+  gameConfig.civilianCount = c;
+  gameConfig.assassinCount = a;
+  gameConfig.dictionary = words;
+  newGame();
+}
+
+// Close pickers on outside click
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.card')) closeAllPickers();
+});
+
+// Init
+updateDictInfo();
+newGame();
+</script>
+</body>
+</html>
