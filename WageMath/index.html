@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ontario Wage &amp; Take-Home Calculator (2026)</title>
+<style>
+  :root{
+    --bg:#E9EDEC; --card:#FFFFFF; --ink:#152528; --muted:#5D6E70;
+    --line:#D3DAD9; --accent:#0E7C66; --accentSoft:#E1F0EB; --deduct:#A8543F;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; background:var(--bg); color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,sans-serif; padding:28px 18px;
+  }
+  .wrap{max-width:720px;margin:0 auto}
+  .mono{font-family:ui-monospace,'SF Mono',Menlo,monospace}
+
+  .eyebrow{font-size:12px;font-weight:700;letter-spacing:.14em;color:var(--accent);text-transform:uppercase}
+  h1{font-size:30px;font-weight:700;margin:4px 0 0;letter-spacing:-.02em}
+
+  .toggle{display:flex;gap:4px;background:var(--card);padding:4px;border-radius:10px;border:1px solid var(--line);margin:22px 0 18px}
+  .toggle button{flex:1;padding:10px 8px;font-size:14px;font-weight:600;cursor:pointer;border:none;border-radius:7px;transition:all .15s;background:transparent;color:var(--muted);font-family:inherit}
+  .toggle button.active{background:var(--ink);color:#fff}
+
+  .card{background:var(--card);border-radius:14px;border:1px solid var(--line);padding:20px;margin-bottom:16px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  label.lbl{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:block}
+  input{width:100%;padding:11px 13px;font-size:16px;font-family:ui-monospace,'SF Mono',Menlo,monospace;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;outline:none}
+  input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accentSoft)}
+  .hint{font-size:12.5px;color:var(--muted);margin-top:12px}
+
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+  .stat{background:var(--card);border-radius:12px;border:1px solid var(--line);padding:14px 16px}
+  .stat .k{font-size:11.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+  .stat .v{font-size:24px;font-weight:700;margin-top:4px;letter-spacing:-.01em}
+
+  .hero{background:var(--ink);color:#fff;border-radius:14px;padding:22px 24px;margin-bottom:16px}
+  .hero .k{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#8FB8AD}
+  .hero-main{display:flex;flex-wrap:wrap;gap:6px 28px;align-items:baseline;margin-top:8px}
+  .hero-main .big{font-size:38px;font-weight:700;letter-spacing:-.02em}
+  .hero-main .per{font-size:15px;color:#B7CFC9}
+  .netbits{display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:16px}
+  .netbits .nlabel{font-size:11px;color:#8FB8AD}
+  .netbits .nval{font-size:17px;font-weight:600;margin-top:2px;font-family:ui-monospace,monospace}
+
+  .ded-head{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+  .ded-head .t{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .ded-head .r{font-size:12px;color:var(--muted)}
+  .row{display:flex;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);gap:12px}
+  .row .name{font-size:14.5px;flex:1}
+  .row .bar{width:70px;height:5px;background:#EAEEED;border-radius:3px;overflow:hidden}
+  .row .bar span{display:block;height:100%;background:var(--deduct)}
+  .row .amt{font-size:14.5px;width:92px;text-align:right;color:var(--deduct);font-family:ui-monospace,monospace}
+  .total{display:flex;justify-content:space-between;padding:14px 0 4px;margin-top:4px;border-top:2px solid var(--ink);font-weight:700}
+  .cardpad{padding:8px 20px 16px}
+  .note{font-size:11.5px;color:var(--muted);line-height:1.6;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div>
+    <div class="eyebrow">Ontario · 2026</div>
+    <h1>Wage &amp; Take-Home Calculator</h1>
+  </div>
+
+  <div class="toggle" id="toggle">
+    <button data-mode="hourly" class="active">Hourly → Annual</button>
+    <button data-mode="annual">Annual → Hourly</button>
+  </div>
+
+  <div class="card">
+    <div class="grid2">
+      <div style="grid-column:1 / -1">
+        <label class="lbl" id="rateLabel">Hourly rate</label>
+        <input id="rate" inputmode="decimal" value="28" />
+      </div>
+      <div>
+        <label class="lbl">Hours / week</label>
+        <input id="hpw" inputmode="decimal" value="40" />
+      </div>
+      <div>
+        <label class="lbl">Weeks / year</label>
+        <input id="wpy" inputmode="decimal" value="52" />
+      </div>
+    </div>
+    <div class="hint" id="hoursHint"></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="k">Gross annual</div><div class="v mono" id="grossAnnual"></div></div>
+    <div class="stat"><div class="k">Gross hourly</div><div class="v mono" id="grossHourly"></div></div>
+  </div>
+
+  <div class="hero">
+    <div class="k">Estimated take-home</div>
+    <div class="hero-main">
+      <div class="big mono" id="netAnnual"></div>
+      <div class="per">/ year</div>
+    </div>
+    <div class="netbits">
+      <div><div class="nlabel">Monthly</div><div class="nval" id="netMonthly"></div></div>
+      <div><div class="nlabel">Bi-weekly</div><div class="nval" id="netBiweekly"></div></div>
+      <div><div class="nlabel">Weekly</div><div class="nval" id="netWeekly"></div></div>
+      <div><div class="nlabel">Hourly</div><div class="nval" id="netHourly"></div></div>
+    </div>
+  </div>
+
+  <div class="card cardpad">
+    <div class="ded-head">
+      <span class="t">Deductions</span>
+      <span class="r" id="effRate"></span>
+    </div>
+    <div id="deductions"></div>
+    <div class="total">
+      <span>Total deductions</span>
+      <span class="mono" id="totalDed"></span>
+    </div>
+  </div>
+
+  <p class="note">
+    Estimate for Ontario employment income, 2026 CRA/Ontario rates. Assumes the basic personal
+    amount only (no RRSP, dependants, or other credits). Ontario Health Premium and surtax are
+    annual amounts and may not be withheld evenly on each cheque. For an exact figure use the CRA
+    Payroll Deductions Online Calculator (PDOC).
+  </p>
+</div>
+
+<script>
+// ── 2026 Ontario + Federal rates (CRA / Ontario, verified) ──
+var CPP = { basic:3500, ympe:74600, yampe:85000, rate1:0.0595, rate2:0.04 };
+var EI = { max:68900, rate:0.0163 };
+var FED_BRACKETS = [[0,57375,0.14],[57375,114750,0.205],[114750,158519,0.26],[158519,220000,0.29],[220000,Infinity,0.33]];
+var FED_BPA_MAX=16452, FED_BPA_MIN=14829, FED_BPA_PHASE_LO=181440, FED_BPA_PHASE_HI=258482, FED_LOW_RATE=0.14, CEA=1501;
+var ON_BRACKETS = [[0,53891,0.0505],[53891,107785,0.0915],[107785,150000,0.1116],[150000,220000,0.1216],[220000,Infinity,0.1316]];
+var ON_BPA=12989, ON_LOW_RATE=0.0505, ON_SURTAX_1=5818, ON_SURTAX_2=7446;
+
+function bracketTax(income, brackets){
+  var tax=0;
+  for(var i=0;i<brackets.length;i++){
+    var lo=brackets[i][0], hi=brackets[i][1], rate=brackets[i][2];
+    if(income>lo) tax += (Math.min(income,hi)-lo)*rate;
+  }
+  return tax;
+}
+function ohp(income){
+  if(income<=20000) return 0;
+  if(income<=36000) return Math.min(300,(income-20000)*0.06);
+  if(income<=48000) return Math.min(450,300+(income-36000)*0.06);
+  if(income<=72000) return Math.min(600,450+(income-48000)*0.25);
+  if(income<=200000) return Math.min(750,600+(income-72000)*0.25);
+  if(income<=200600) return Math.min(900,750+(income-200000)*0.25);
+  return 900;
+}
+function fedBPA(income){
+  if(income<=FED_BPA_PHASE_LO) return FED_BPA_MAX;
+  if(income>=FED_BPA_PHASE_HI) return FED_BPA_MIN;
+  var frac=(income-FED_BPA_PHASE_LO)/(FED_BPA_PHASE_HI-FED_BPA_PHASE_LO);
+  return FED_BPA_MAX-(FED_BPA_MAX-FED_BPA_MIN)*frac;
+}
+function compute(gross){
+  var pensionable=Math.max(0,Math.min(gross,CPP.ympe)-CPP.basic);
+  var cpp1=pensionable*CPP.rate1;
+  var cpp2=Math.max(0,Math.min(gross,CPP.yampe)-CPP.ympe)*CPP.rate2;
+  var cppBase=pensionable*0.0495;
+  var cppEnhanced=pensionable*0.01+cpp2;
+  var cpp=cpp1+cpp2;
+  var ei=Math.min(gross,EI.max)*EI.rate;
+  var taxable=gross-cppEnhanced;
+  var fedGross=bracketTax(taxable,FED_BRACKETS);
+  var fedCredits=(fedBPA(taxable)+cppBase+ei+CEA)*FED_LOW_RATE;
+  var federal=Math.max(0,fedGross-fedCredits);
+  var onGross=bracketTax(taxable,ON_BRACKETS);
+  var onCredits=(ON_BPA+cppBase+ei)*ON_LOW_RATE;
+  var onBasic=Math.max(0,onGross-onCredits);
+  var surtax=Math.max(0,onBasic-ON_SURTAX_1)*0.2+Math.max(0,onBasic-ON_SURTAX_2)*0.36;
+  var ohpAmt=ohp(taxable);
+  var ontario=onBasic+surtax+ohpAmt;
+  var totalTax=federal+ontario+cpp+ei;
+  return { gross:gross, cpp:cpp, ei:ei, federal:federal, ontario:ontario, ohp:ohpAmt,
+           totalTax:totalTax, net:gross-totalTax, effRate:gross>0?totalTax/gross:0 };
+}
+
+// ── formatting ──
+function money(n){ return n.toLocaleString('en-CA',{style:'currency',currency:'CAD',maximumFractionDigits:0}); }
+function money2(n){ return n.toLocaleString('en-CA',{style:'currency',currency:'CAD',minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+// ── state + render ──
+var mode='hourly';
+var $=function(id){return document.getElementById(id);};
+
+function num(id){ return parseFloat($(id).value)||0; }
+
+function render(){
+  var hpw=num('hpw'), wpy=num('wpy'), annualHours=hpw*wpy;
+  var gross = mode==='hourly' ? num('rate')*annualHours : num('rate');
+  var derivedHourly = annualHours>0 ? gross/annualHours : 0;
+  var r=compute(gross);
+  var netHourly = annualHours>0 ? r.net/annualHours : 0;
+
+  $('hoursHint').textContent = annualHours.toLocaleString() + ' working hours/year';
+  $('grossAnnual').textContent = money(gross);
+  $('grossHourly').textContent = money2(derivedHourly);
+  $('netAnnual').textContent = money(r.net);
+  $('netMonthly').textContent = money(r.net/12);
+  $('netBiweekly').textContent = money(r.net/26);
+  $('netWeekly').textContent = money(r.net/52);
+  $('netHourly').textContent = money2(netHourly);
+  $('effRate').textContent = (r.effRate*100).toFixed(1)+'% of gross';
+  $('totalDed').textContent = money(r.totalTax);
+
+  var items=[
+    ['Federal tax', r.federal],
+    ['Ontario tax', r.ontario - r.ohp],
+    ['Ontario Health Premium', r.ohp],
+    ['CPP + CPP2', r.cpp],
+    ['EI', r.ei]
+  ];
+  var html='';
+  for(var i=0;i<items.length;i++){
+    var name=items[i][0], val=items[i][1];
+    var pct = gross>0 ? (val/gross)*100 : 0;
+    var barW = Math.min(100, pct*3);
+    html += '<div class="row"><span class="name">'+name+'</span>'+
+            '<div class="bar"><span style="width:'+barW+'%"></span></div>'+
+            '<span class="amt">−'+money(val)+'</span></div>';
+  }
+  $('deductions').innerHTML=html;
+}
+
+// input mode: when annual, the "rate" field holds the salary
+function setMode(m){
+  mode=m;
+  var btns=document.querySelectorAll('#toggle button');
+  btns.forEach(function(b){ b.classList.toggle('active', b.dataset.mode===m); });
+  $('rateLabel').textContent = m==='hourly' ? 'Hourly rate' : 'Annual salary';
+  $('rate').value = m==='hourly' ? '28' : '58240';
+  render();
+}
+
+document.querySelectorAll('#toggle button').forEach(function(b){
+  b.addEventListener('click', function(){ setMode(b.dataset.mode); });
+});
+['rate','hpw','wpy'].forEach(function(id){
+  $(id).addEventListener('input', render);
+});
+
+render();
+</script>
+</body>
+</html>
